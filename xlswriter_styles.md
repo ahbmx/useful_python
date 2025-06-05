@@ -152,6 +152,72 @@ These methods don’t require cell values to exist — they apply formatting acr
 Let me know if you're aiming to format a specific range (like A1\:C3) without putting values — I can help with that too.
 
 
+# Merging Cells in Excel using Python with XlsxWriter
 
+To merge cells in an Excel file using the XlsxWriter library in Python, you can use the `merge_range()` method. Here's how to do it:
+
+## Basic Syntax
+
+```python
+worksheet.merge_range(first_row, first_col, last_row, last_col, data, cell_format)
+```
+
+## Example
+
+```python
+import xlsxwriter
+
+# Create a new workbook and add a worksheet
+workbook = xlsxwriter.Workbook('merged_cells.xlsx')
+worksheet = workbook.add_worksheet()
+
+# Merge cells A1 to D1 (row 0, columns 0 to 3)
+worksheet.merge_range(0, 0, 0, 3, 'Merged Header', workbook.add_format({'align': 'center'}))
+
+# Merge cells A2 to A5 (rows 1 to 4, column 0)
+worksheet.merge_range(1, 0, 4, 0, 'Vertical Text', workbook.add_format({'align': 'center', 'valign': 'vcenter'}))
+
+workbook.close()
+```
+
+## Formatting Merged Cells
+
+You can apply formatting to merged cells using the `add_format()` method:
+
+```python
+# Create a format for merged cells
+merge_format = workbook.add_format({
+    'bold': True,
+    'border': 1,
+    'align': 'center',
+    'valign': 'vcenter',
+    'fg_color': 'yellow'
+})
+
+# Apply the format to merged cells
+worksheet.merge_range('C6:E8', 'Formatted Merge', merge_format)
+```
+
+## Notes
+
+1. The cell references can be specified using either row/column numbers (0-based) or A1-style notation.
+2. The data (text or number) is written to the top-left cell of the merged range.
+3. All other cells in the range become empty and cannot be written to individually.
+4. For vertical text alignment, use `'valign': 'vcenter'` in the format.
+
+## More Examples
+
+```python
+# Merge across columns (single row)
+worksheet.merge_range('B2:D2', 'Merged across columns')
+
+# Merge across rows (single column)
+worksheet.merge_range('B4:B6', 'Merged down rows')
+
+# Merge a block of cells
+worksheet.merge_range('D4:F6', 'Big merged block', merge_format)
+```
+
+Remember to always close the workbook with `workbook.close()` to save your changes.
 
 
