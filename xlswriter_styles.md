@@ -221,3 +221,123 @@ worksheet.merge_range('D4:F6', 'Big merged block', merge_format)
 Remember to always close the workbook with `workbook.close()` to save your changes.
 
 
+# Applying Styles to Multiple Cells in XlsxWriter
+
+To apply a style to a list of cells in XlsxWriter, you have several options. Here's how to efficiently set styles for multiple cells:
+
+## Option 1: Loop Through a List of Cells
+
+```python
+import xlsxwriter
+
+# Create workbook and worksheet
+workbook = xlsxwriter.Workbook('styled_cells.xlsx')
+worksheet = workbook.add_worksheet()
+
+# Create a style format
+cell_style = workbook.add_format({
+    'bold': True,
+    'font_color': 'blue',
+    'bg_color': '#FFFF00',
+    'border': 1
+})
+
+# List of cells to style (A1 notation)
+cells_to_style = ['A1', 'B2', 'C3', 'D4']
+
+for cell in cells_to_style:
+    worksheet.write(cell, "Styled Cell", cell_style)
+```
+
+## Option 2: Style a Range of Cells
+
+```python
+# Style a range of cells (B2:D4)
+worksheet.conditional_format('B2:D4', {
+    'type': 'no_blanks',
+    'format': cell_style
+})
+```
+
+## Option 3: Style Entire Rows or Columns
+
+```python
+# Style entire column A
+worksheet.set_column('A:A', None, cell_style)
+
+# Style entire row 1
+worksheet.set_row(0, None, cell_style)
+```
+
+## Option 4: Style Merged Cells
+
+```python
+# Create a style for merged cells
+merge_style = workbook.add_format({
+    'align': 'center',
+    'valign': 'vcenter',
+    'bg_color': '#CCFFCC',
+    'border': 1
+})
+
+# Merge and style cells
+worksheet.merge_range('A1:C1', 'Merged Title', merge_style)
+```
+
+## Option 5: Style Based on Conditions
+
+```python
+# Apply style to cells meeting certain conditions
+worksheet.conditional_format('A1:D10', {
+    'type': 'cell',
+    'criteria': '>',
+    'value': 50,
+    'format': cell_style
+})
+```
+
+## Complete Example
+
+```python
+import xlsxwriter
+
+# Create workbook
+workbook = xlsxwriter.Workbook('multi_styled_cells.xlsx')
+worksheet = workbook.add_worksheet()
+
+# Define styles
+header_style = workbook.add_format({
+    'bold': True,
+    'font_size': 14,
+    'bg_color': '#336699',
+    'font_color': 'white'
+})
+
+data_style = workbook.add_format({
+    'num_format': '$#,##0.00',
+    'border': 1
+})
+
+highlight_style = workbook.add_format({
+    'bg_color': '#FFC7CE',
+    'font_color': '#9C0006'
+})
+
+# Style individual cells
+important_cells = ['A1', 'C1', 'E1']
+for cell in important_cells:
+    worksheet.write(cell, "Important", header_style)
+
+# Style a range
+worksheet.conditional_format('B2:D10', {
+    'type': 'no_blanks',
+    'format': data_style
+})
+
+# Style merged cells
+worksheet.merge_range('A12:D12', 'Quarterly Summary', header_style)
+
+workbook.close()
+```
+
+Remember that XlsxWriter applies styles when you write data to cells. If you want to style empty cells, use `conditional_format` with the 'no_blanks' type as shown above.
