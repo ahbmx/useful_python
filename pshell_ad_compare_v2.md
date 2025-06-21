@@ -1,4 +1,6 @@
-Here's the complete working script with all fixes applied, including proper CSV export in Constrained Language Mode:
+# Final Fixed Script Without Null-Coalescing Operator
+
+The error occurs because the `??` null-coalescing operator isn't available in older PowerShell versions or constrained mode. Here's the complete fixed script using compatible syntax:
 
 ```powershell
 # User Comparison Script for Constrained Mode
@@ -36,18 +38,18 @@ function Get-UserProperties {
         $user = $searcher.FindOne()
 
         if ($user) {
-            $userProps["Name"] = $user.Properties["name"][0]
-            $userProps["Login"] = $user.Properties["samaccountname"][0]
-            $userProps["Email"] = $user.Properties["mail"][0]
-            $userProps["Title"] = $user.Properties["title"][0]
-            $userProps["Department"] = $user.Properties["department"][0]
+            $userProps["Name"] = if ($user.Properties["name"][0]) { $user.Properties["name"][0] } else { "" }
+            $userProps["Login"] = if ($user.Properties["samaccountname"][0]) { $user.Properties["samaccountname"][0] } else { "" }
+            $userProps["Email"] = if ($user.Properties["mail"][0]) { $user.Properties["mail"][0] } else { "" }
+            $userProps["Title"] = if ($user.Properties["title"][0]) { $user.Properties["title"][0] } else { "" }
+            $userProps["Department"] = if ($user.Properties["department"][0]) { $user.Properties["department"][0] } else { "" }
             $userProps["Enabled"] = if ($user.Properties["useraccountcontrol"][0] -band 0x2) { "Disabled" } else { "Enabled" }
             
             # Get group memberships
             $groupSearcher = New-Object System.DirectoryServices.DirectorySearcher($domain)
             $groupSearcher.Filter = "(&(objectCategory=group)(member=$($user.Properties["distinguishedname"][0])))"
             $groups = $groupSearcher.FindAll()
-            $userProps["Groups"] = $groups | ForEach-Object { $_.Properties["name"][0] } | Sort-Object
+            $userProps["Groups"] = $groups | ForEach-Object { if ($_.Properties["name"][0]) { $_.Properties["name"][0] } else { "" } } | Sort-Object
         } else {
             $userProps["Error"] = "User not found"
         }
@@ -114,13 +116,15 @@ foreach ($pair in $userPairs) {
 
     "Name", "Login", "Email", "Title", "Department", "Enabled" | ForEach-Object {
         $prop = $_
-        Write-Host ("{0,-20} {1,-30} {2,-30}" -f $prop, $user1Props[$prop], $user2Props[$prop])
+        $value1 = if ($user1Props[$prop]) { $user1Props[$prop] } else { "" }
+        $value2 = if ($user2Props[$prop]) { $user2Props[$prop] } else { "" }
+        Write-Host ("{0,-20} {1,-30} {2,-30}" -f $prop, $value1, $value2)
     }
 
     # Compare groups
-    $user1Only = $user1Props["Groups"] | Where-Object { $_ -notin $user2Props["Groups"] }
-    $user2Only = $user2Props["Groups"] | Where-Object { $_ -notin $user1Props["Groups"] }
-    $commonGroups = $user1Props["Groups"] | Where-Object { $_ -in $user2Props["Groups"] }
+    $user1Only = if ($user1Props["Groups"]) { $user1Props["Groups"] | Where-Object { $_ -notin $user2Props["Groups"] } } else { @() }
+    $user2Only = if ($user2Props["Groups"]) { $user2Props["Groups"] | Where-Object { $_ -notin $user1Props["Groups"] } } else { @() }
+    $commonGroups = if ($user1Props["Groups"] -and $user2Props["Groups"]) { $user1Props["Groups"] | Where-Object { $_ -in $user2Props["Groups"] } } else { @() }
 
     # Display group comparison
     Write-Host ""
@@ -129,11 +133,7 @@ foreach ($pair in $userPairs) {
     Write-Host ("{0,-40} {1,-40}" -f "----------------------------------------", "----------------------------------------")
 
     # Determine max lines without [Math]::Max
-    if ($user1Only.Count -gt $user2Only.Count) {
-        $maxLines = $user1Only.Count
-    } else {
-        $maxLines = $user2Only.Count
-    }
+    $maxLines = if ($user1Only.Count -gt $user2Only.Count) { $user1Only.Count } else { $user2Only.Count }
 
     # Display side-by-side
     for ($i = 0; $i -lt $maxLines; $i++) {
@@ -156,19 +156,19 @@ foreach ($pair in $userPairs) {
         "Comparison" = "$user1 vs $user2"
         "User1" = $user1
         "User2" = $user2
-        "User1_Name" = $user1Props["Name"]
-        "User2_Name" = $user2Props["Name"]
-        "User1_Email" = $user1Props["Email"]
-        "User2_Email" = $user2Props["Email"]
-        "User1_Title" = $user1Props["Title"]
-        "User2_Title" = $user2Props["Title"]
-        "User1_Department" = $user1Props["Department"]
-        "User2_Department" = $user2Props["Department"]
-        "User1_Status" = $user1Props["Enabled"]
-        "User2_Status" = $user2Props["Enabled"]
-        "Shared_Groups" = ($commonGroups -join "; ")
-        "Unique_to_User1" = ($user1Only -join "; ")
-        "Unique_to_User2" = ($user2Only -join "; ")
+        "User1_Name" = if ($user1Props["Name"]) { $user1Props["Name"] } else { "" }
+        "User2_Name" = if ($user2Props["Name"]) { $user2Props["Name"] } else { "" }
+        "User1_Email" = if ($user1Props["Email"]) { $user1Props["Email"] } else { "" }
+        "User2_Email" = if ($user2Props["Email"]) { $user2Props["Email"] } else { "" }
+        "User1_Title" = if ($user1Props["Title"]) { $user1Props["Title"] } else { "" }
+        "User2_Title" = if ($user2Props["Title"]) { $user2Props["Title"] } else { "" }
+        "User1_Department" = if ($user1Props["Department"]) { $user1Props["Department"] } else { "" }
+        "User2_Department" = if ($user2Props["Department"]) { $user2Props["Department"] } else { "" }
+        "User1_Status" = if ($user1Props["Enabled"]) { $user1Props["Enabled"] } else { "" }
+        "User2_Status" = if ($user2Props["Enabled"]) { $user2Props["Enabled"] } else { "" }
+        "Shared_Groups" = if ($commonGroups) { ($commonGroups -join "; ") } else { "" }
+        "Unique_to_User1" = if ($user1Only) { ($user1Only -join "; ") } else { "" }
+        "Unique_to_User2" = if ($user2Only) { ($user2Only -join "; ") } else { "" }
     }
 }
 
@@ -185,22 +185,22 @@ $csvContent += $headerLine
 # Process each comparison entry
 foreach ($entry in $csvData) {
     # Escape any quotes in the data and handle nulls
-    $comparison       = ($entry["Comparison"] -replace '"', '""') ?? ""
-    $user1            = ($entry["User1"] -replace '"', '""') ?? ""
-    $user2            = ($entry["User2"] -replace '"', '""') ?? ""
-    $user1Name        = ($entry["User1_Name"] -replace '"', '""') ?? ""
-    $user2Name        = ($entry["User2_Name"] -replace '"', '""') ?? ""
-    $user1Email       = ($entry["User1_Email"] -replace '"', '""') ?? ""
-    $user2Email       = ($entry["User2_Email"] -replace '"', '""') ?? ""
-    $user1Title       = ($entry["User1_Title"] -replace '"', '""') ?? ""
-    $user2Title       = ($entry["User2_Title"] -replace '"', '""') ?? ""
-    $user1Department  = ($entry["User1_Department"] -replace '"', '""') ?? ""
-    $user2Department  = ($entry["User2_Department"] -replace '"', '""') ?? ""
-    $user1Status      = ($entry["User1_Status"] -replace '"', '""') ?? ""
-    $user2Status      = ($entry["User2_Status"] -replace '"', '""') ?? ""
-    $sharedGroups     = ($entry["Shared_Groups"] -replace '"', '""') ?? ""
-    $user1Unique      = ($entry["Unique_to_User1"] -replace '"', '""') ?? ""
-    $user2Unique      = ($entry["Unique_to_User2"] -replace '"', '""') ?? ""
+    $comparison       = if ($entry["Comparison"]) { $entry["Comparison"].ToString().Replace('"', '""') } else { "" }
+    $user1            = if ($entry["User1"]) { $entry["User1"].ToString().Replace('"', '""') } else { "" }
+    $user2            = if ($entry["User2"]) { $entry["User2"].ToString().Replace('"', '""') } else { "" }
+    $user1Name        = if ($entry["User1_Name"]) { $entry["User1_Name"].ToString().Replace('"', '""') } else { "" }
+    $user2Name        = if ($entry["User2_Name"]) { $entry["User2_Name"].ToString().Replace('"', '""') } else { "" }
+    $user1Email       = if ($entry["User1_Email"]) { $entry["User1_Email"].ToString().Replace('"', '""') } else { "" }
+    $user2Email       = if ($entry["User2_Email"]) { $entry["User2_Email"].ToString().Replace('"', '""') } else { "" }
+    $user1Title       = if ($entry["User1_Title"]) { $entry["User1_Title"].ToString().Replace('"', '""') } else { "" }
+    $user2Title       = if ($entry["User2_Title"]) { $entry["User2_Title"].ToString().Replace('"', '""') } else { "" }
+    $user1Department  = if ($entry["User1_Department"]) { $entry["User1_Department"].ToString().Replace('"', '""') } else { "" }
+    $user2Department  = if ($entry["User2_Department"]) { $entry["User2_Department"].ToString().Replace('"', '""') } else { "" }
+    $user1Status      = if ($entry["User1_Status"]) { $entry["User1_Status"].ToString().Replace('"', '""') } else { "" }
+    $user2Status      = if ($entry["User2_Status"]) { $entry["User2_Status"].ToString().Replace('"', '""') } else { "" }
+    $sharedGroups     = if ($entry["Shared_Groups"]) { $entry["Shared_Groups"].ToString().Replace('"', '""') } else { "" }
+    $user1Unique      = if ($entry["Unique_to_User1"]) { $entry["Unique_to_User1"].ToString().Replace('"', '""') } else { "" }
+    $user2Unique      = if ($entry["Unique_to_User2"]) { $entry["Unique_to_User2"].ToString().Replace('"', '""') } else { "" }
     
     # Build the data line with proper CSV formatting
     $dataLine = """$comparison"",""$user1"",""$user2"",""$user1Name"",""$user2Name"",""$user1Email"",""$user2Email"",""$user1Title"",""$user2Title"",""$user1Department"",""$user2Department"",""$user1Status"",""$user2Status"",""$sharedGroups"",""$user1Unique"",""$user2Unique"""
@@ -223,18 +223,16 @@ try {
 Write-Host "`nComparison process completed." -ForegroundColor Cyan
 ```
 
-Key Features:
-1. Works in Constrained Language Mode
-2. Properly handles CSV export with headers and all data rows
-3. Includes error handling throughout
-4. Provides console output and CSV file
-5. Compares multiple user pairs
-6. Shows group membership differences
-7. Creates dated output file
+Key Changes Made:
+1. Replaced all `??` operators with traditional `if` statements
+2. Added proper null checking throughout the script
+3. Ensured all values are converted to strings before CSV export
+4. Maintained all functionality while being compatible with constrained mode
+5. Added more robust error handling for null values
 
-The script will:
-- Compare all specified user pairs
-- Show results in the console
-- Create a CSV file named "UserComparison_YYYYMMDD.csv"
-- Handle errors gracefully
-- Work without admin rights or special modules
+The script will now:
+1. Work in constrained language mode
+2. Handle null values properly
+3. Export complete CSV data with headers
+4. Show comparison results in console
+5. Create dated output files
