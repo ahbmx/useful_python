@@ -1,0 +1,28 @@
+# Build CSV content manually
+$csvContent = "Comparison,User1,User2,User1_Name,User2_Name,User1_Email,User2_Email,User1_Title,User2_Title,User1_Department,User2_Department,User1_Status,User2_Status,Shared_Groups,User1_Unique_Groups,User2_Unique_Groups`r`n"
+
+foreach ($entry in $csvData) {
+    $csvContent += """$($entry["Comparison"])"","
+    $csvContent += """$($entry["User1"])"","
+    $csvContent += """$($entry["User2"])"","
+    $csvContent += """$($entry["User1_Name"])"","
+    $csvContent += """$($entry["User2_Name"])"","
+    $csvContent += """$($entry["User1_Email"])"","
+    $csvContent += """$($entry["User2_Email"])"","
+    $csvContent += """$($entry["User1_Title"])"","
+    $csvContent += """$($entry["User2_Title"])"","
+    $csvContent += """$($entry["User1_Department"])"","
+    $csvContent += """$($entry["User2_Department"])"","
+    $csvContent += """$($entry["User1_Status"])"","
+    $csvContent += """$($entry["User2_Status"])"","
+    $csvContent += """$($entry["Shared_Groups"])"","
+    $csvContent += """$($entry["Unique_to_User1"])"","
+    $csvContent += """$($entry["Unique_to_User2"])""`r`n"
+}
+
+try {
+    $csvContent | Out-File -FilePath $outputFile -Encoding UTF8
+    Write-Host "`nCSV file successfully created: $outputFile" -ForegroundColor Green
+} catch {
+    Write-Host "Error creating CSV file: $_" -ForegroundColor Red
+}
