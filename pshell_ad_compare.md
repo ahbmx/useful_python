@@ -10,7 +10,8 @@ $userPairs = @(
     @("user3", "user4")  # Add more pairs here
 )
 
-$domainPath = "LDAP://DC=yourdomain,DC=com"  # Update with your domain
+$rootDSE = [ADSI]"LDAP://RootDSE"
+$domainPath = "LDAP://$($rootDSE.defaultNamingContext)"  # Update with your domain
 $outputFile = "UserComparison_$(Get-Date -Format 'yyyyMMdd').csv"  # CSV filename with date
 
 # Initialize CSV output
@@ -112,7 +113,11 @@ foreach ($pair in $userPairs) {
     Write-Host ("{0,-40} {1,-40}" -f "ONLY IN $($user1.ToUpper())", "ONLY IN $($user2.ToUpper())")
     Write-Host ("{0,-40} {1,-40}" -f "----------------------------------------", "----------------------------------------")
 
-    $maxLines = [Math]::Max($user1Only.Count, $user2Only.Count)
+    if ($user1Only.Count -gt $user2Only.Count) {
+        $maxLines = $user1Only.Count
+    } else {
+        $maxLines = $user2Only.Count
+    }
     for ($i = 0; $i -lt $maxLines; $i++) {
         $left = if ($i -lt $user1Only.Count) { $user1Only[$i] } else { "" }
         $right = if ($i -lt $user2Only.Count) { $user2Only[$i] } else { "" }
